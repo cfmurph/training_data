@@ -19,42 +19,58 @@ A full-stack web application that connects to **Strava** and **Garmin Connect** 
 | Charts | Recharts |
 | Data Fetching | TanStack Query (React Query) |
 | Routing | React Router v7 |
-| Backend | Node.js, Express, TypeScript |
-| Auth | Strava OAuth 2.0, Garmin OAuth 1.0a |
+| Backend | Java 21, Spring Boot 3.2 |
+| HTTP Client | Spring WebFlux `WebClient` |
+| Auth | Strava OAuth 2.0, Garmin OAuth 1.0a (HMAC-SHA1) |
+| Build | Maven 3.8+ |
 
 ## Project Structure
 
 ```
 training-progress-app/
-├── backend/                 # Express API server
-│   ├── src/
-│   │   ├── routes/          # API route handlers
-│   │   │   ├── strava.ts    # Strava OAuth routes
-│   │   │   ├── garmin.ts    # Garmin OAuth routes
-│   │   │   ├── activities.ts # Activity endpoints
-│   │   │   └── stats.ts     # Stats/analytics endpoints
-│   │   ├── services/        # External API clients
-│   │   │   ├── strava.ts    # Strava API integration
-│   │   │   └── garmin.ts    # Garmin API integration
-│   │   ├── utils/
-│   │   │   └── normalize.ts # Unified activity model + stats computation
-│   │   └── index.ts         # Express app entry point
-│   ├── .env.example         # Environment variable template
-│   └── package.json
-└── frontend/                # React + Vite SPA
+├── backend/                                    # Spring Boot API server
+│   ├── pom.xml
+│   └── src/main/java/com/traintrack/
+│       ├── TrainTrackApplication.java          # Entry point
+│       ├── config/
+│       │   ├── StravaProperties.java           # Strava config binding
+│       │   ├── GarminProperties.java           # Garmin config binding
+│       │   └── WebConfig.java                  # CORS configuration
+│       ├── controller/
+│       │   ├── AuthController.java             # OAuth routes
+│       │   ├── ActivityController.java         # Activity endpoints
+│       │   ├── StatsController.java            # Stats endpoints
+│       │   └── HealthController.java           # Health check
+│       ├── service/
+│       │   ├── StravaService.java              # Strava OAuth 2.0 + API
+│       │   ├── GarminService.java              # Garmin OAuth 1.0a + API
+│       │   └── StatsService.java               # Stats aggregation
+│       └── model/
+│           ├── Activity.java                   # Unified activity model
+│           ├── TrainingStats.java              # Stats response model
+│           ├── AuthStatus.java                 # Auth status response
+│           ├── StravaTokens.java
+│           └── GarminTokens.java
+└── frontend/                                   # React + Vite SPA
     ├── src/
-    │   ├── components/      # Reusable UI components
-    │   ├── pages/           # Route pages
-    │   ├── hooks/           # React Query hooks
-    │   ├── services/        # API client
-    │   ├── types/           # TypeScript types
-    │   └── utils/           # Formatting helpers
+    │   ├── components/   Navbar, ActivityCard, StatCard, charts
+    │   ├── pages/        Landing, Connect, Dashboard, Activities
+    │   ├── hooks/        useTraining.ts (React Query hooks)
+    │   ├── services/     api.ts (axios client)
+    │   ├── types/        TypeScript types
+    │   └── utils/        format.ts (distance, duration, pace)
     └── package.json
 ```
 
 ## Setup
 
-### 1. Clone and install
+### Prerequisites
+
+- **Java 21** (OpenJDK or Oracle JDK)
+- **Maven 3.8+**
+- **Node.js 18+** and npm
+
+### 1. Clone and install frontend deps
 
 ```bash
 git clone <repo-url>
@@ -68,42 +84,44 @@ npm install
 2. Create an application with callback URL: `http://localhost:3001/api/auth/strava/callback`
 3. Copy your Client ID and Client Secret
 
-### 3. Configure Garmin API
+### 3. Configure Garmin API (optional)
 
 Garmin's Health API requires a partnership application:
 1. Apply at [developer.garmin.com/health-api](https://developer.garmin.com/health-api/overview/)
-2. Once approved, set your redirect URI to: `http://localhost:3001/api/auth/garmin/callback`
+2. Set redirect URI to: `http://localhost:3001/api/auth/garmin/callback`
 
-### 4. Create backend `.env`
+### 4. Set environment variables
 
 ```bash
-cp backend/.env.example backend/.env
+export STRAVA_CLIENT_ID=your_client_id
+export STRAVA_CLIENT_SECRET=your_client_secret
+export STRAVA_REDIRECT_URI=http://localhost:3001/api/auth/strava/callback
+
+# Optional Garmin
+export GARMIN_CONSUMER_KEY=your_key
+export GARMIN_CONSUMER_SECRET=your_secret
+export GARMIN_REDIRECT_URI=http://localhost:3001/api/auth/garmin/callback
+
+export FRONTEND_URL=http://localhost:5173
 ```
 
-Edit `backend/.env`:
-
-```env
-PORT=3001
-SESSION_SECRET=your-random-secret-string-here
-
-# Strava
-STRAVA_CLIENT_ID=your_strava_client_id
-STRAVA_CLIENT_SECRET=your_strava_client_secret
-STRAVA_REDIRECT_URI=http://localhost:3001/api/auth/strava/callback
-
-# Garmin (optional)
-GARMIN_CONSUMER_KEY=your_garmin_consumer_key
-GARMIN_CONSUMER_SECRET=your_garmin_consumer_secret
-GARMIN_REDIRECT_URI=http://localhost:3001/api/auth/garmin/callback
-
-FRONTEND_URL=http://localhost:5173
-```
+Or edit `backend/src/main/resources/application.properties` directly.
 
 ### 5. Run the app
 
 ```bash
-# Run both frontend and backend concurrently
+# Both backend and frontend (requires concurrently)
 npm run dev
+```
+
+Or separately:
+
+```bash
+# Backend (terminal 1)
+cd backend && mvn spring-boot:run
+
+# Frontend (terminal 2)
+cd frontend && npx vite
 ```
 
 - Frontend: http://localhost:5173
@@ -113,6 +131,7 @@ npm run dev
 
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/api/health` | Health check |
 | GET | `/api/auth/status` | Check authentication status |
 | GET | `/api/auth/strava/connect` | Initiate Strava OAuth |
 | GET | `/api/auth/strava/callback` | Strava OAuth callback |
@@ -124,21 +143,36 @@ npm run dev
 | GET | `/api/stats/summary` | Aggregate training stats |
 | GET | `/api/stats/weekly?weeks=12` | Weekly volume breakdown |
 
-## Development
+## Build for Production
+
+```bash
+# Build the Spring Boot fat JAR
+cd backend && mvn package -DskipTests
+
+# Build the frontend static assets
+cd frontend && npx vite build
+
+# Run the JAR
+java -jar backend/target/training-backend-1.0.0.jar
+```
+
+Serve the `frontend/dist/` folder from a CDN or configure Spring Boot to serve it as static resources.
+
+## Development Commands
 
 ```bash
 # Backend only
-cd backend && npm run dev
+cd backend && mvn spring-boot:run
 
 # Frontend only
-cd frontend && npm run dev
+cd frontend && npx vite
 
-# Type check backend
-cd backend && npx tsc --noEmit
+# Run backend tests
+cd backend && mvn test
 
 # Type check frontend
 cd frontend && npx tsc --noEmit
 
-# Build frontend for production
-cd frontend && npm run build
+# Build frontend
+cd frontend && npx vite build
 ```

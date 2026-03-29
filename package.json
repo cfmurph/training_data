@@ -3,13 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "backend",
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "build": "npm run build --workspace=frontend",
-    "start": "npm run start --workspace=backend"
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && mvn spring-boot:run",
+    "backend:build": "cd backend && mvn package -DskipTests",
+    "backend:start": "java -jar backend/target/training-backend-1.0.0.jar",
+    "frontend:dev": "npm run dev --workspace=frontend",
+    "build": "npm run backend:build && npm run build --workspace=frontend"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
