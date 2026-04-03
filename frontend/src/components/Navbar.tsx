@@ -2,6 +2,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Activity, LogOut, User, BarChart3 } from 'lucide-react';
 import { useAuthStatus, useLogout } from '../hooks/useTraining';
 
+const ALLOWED_AVATAR_HOSTS = [
+  'dgalywyr863hv.cloudfront.net',  // Strava CDN
+  'lh3.googleusercontent.com',      // Google (Garmin)
+  'content.garmin.com',
+];
+
+function isSafeAvatarUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' &&
+      ALLOWED_AVATAR_HOSTS.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host));
+  } catch {
+    return false;
+  }
+}
+
 export default function Navbar() {
   const { data: auth } = useAuthStatus();
   const { mutate: doLogout } = useLogout();
@@ -35,11 +51,12 @@ export default function Navbar() {
 
                 {auth.athlete && (
                   <div className="flex items-center gap-2 pl-3 border-l border-gray-700">
-                    {auth.athlete.avatar ? (
+                    {auth.athlete.avatar && isSafeAvatarUrl(auth.athlete.avatar) ? (
                       <img
                         src={auth.athlete.avatar}
                         alt={auth.athlete.name}
                         className="w-8 h-8 rounded-full ring-2 ring-gray-700"
+                        referrerPolicy="no-referrer"
                       />
                     ) : (
                       <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">

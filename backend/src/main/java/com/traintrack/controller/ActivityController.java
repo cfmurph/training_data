@@ -6,16 +6,20 @@ import com.traintrack.model.StravaTokens;
 import com.traintrack.service.GarminService;
 import com.traintrack.service.StravaService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+@Validated
 @RestController
 @RequestMapping("/api/activities")
 public class ActivityController {
@@ -32,8 +36,8 @@ public class ActivityController {
 
     @GetMapping
     public ResponseEntity<?> getActivities(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(name = "per_page", defaultValue = "20") int perPage,
+            @RequestParam(defaultValue = "1")  @Min(1)              int page,
+            @RequestParam(name = "per_page", defaultValue = "20") @Min(1) @Max(100) int perPage,
             HttpSession session) {
 
         StravaTokens stravaTokens = (StravaTokens) session.getAttribute("stravaTokens");
@@ -54,13 +58,14 @@ public class ActivityController {
             return ResponseEntity.ok(Map.of("activities", activities, "total", activities.size()));
         } catch (Exception ex) {
             log.error("Error fetching activities", ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to fetch activities"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch activities"));
         }
     }
 
     @GetMapping("/recent")
     public ResponseEntity<?> getRecentActivities(
-            @RequestParam(defaultValue = "5") int limit,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(20) int limit,
             HttpSession session) {
 
         StravaTokens stravaTokens = (StravaTokens) session.getAttribute("stravaTokens");
@@ -82,7 +87,8 @@ public class ActivityController {
             return ResponseEntity.ok(Map.of("activities", activities));
         } catch (Exception ex) {
             log.error("Error fetching recent activities", ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to fetch recent activities"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch recent activities"));
         }
     }
 }

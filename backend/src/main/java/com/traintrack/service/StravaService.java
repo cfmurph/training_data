@@ -5,13 +5,18 @@ import com.traintrack.config.StravaProperties;
 import com.traintrack.model.Activity;
 import com.traintrack.model.AuthStatus;
 import com.traintrack.model.StravaTokens;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -45,18 +50,26 @@ public class StravaService {
 
     public StravaService(StravaProperties props) {
         this.props = props;
-        this.webClient = WebClient.create();
+        HttpClient httpClient = HttpClient.create()
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
+            .responseTimeout(Duration.ofSeconds(15))
+            .doOnConnected(conn ->
+                conn.addHandlerLast(new ReadTimeoutHandler(15)));
+        this.webClient = WebClient.builder()
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .build();
     }
 
     public record TokenExchangeResult(StravaTokens tokens, AuthStatus.AthleteInfo athlete) {}
 
-    public String buildAuthUrl() {
+    public String buildAuthUrl(String state) {
         return UriComponentsBuilder.fromHttpUrl(AUTH_URL)
             .queryParam("client_id",       props.getClientId())
             .queryParam("redirect_uri",    props.getRedirectUri())
             .queryParam("response_type",   "code")
             .queryParam("approval_prompt", "auto")
             .queryParam("scope",           "read,activity:read_all,profile:read_all")
+            .queryParam("state",           state)
             .toUriString();
     }
 

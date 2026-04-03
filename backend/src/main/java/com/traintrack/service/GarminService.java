@@ -4,16 +4,21 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.traintrack.config.GarminProperties;
 import com.traintrack.model.Activity;
 import com.traintrack.model.GarminTokens;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,7 +50,14 @@ public class GarminService {
 
     public GarminService(GarminProperties props) {
         this.props = props;
-        this.webClient = WebClient.create();
+        HttpClient httpClient = HttpClient.create()
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
+            .responseTimeout(Duration.ofSeconds(15))
+            .doOnConnected(conn ->
+                conn.addHandlerLast(new ReadTimeoutHandler(15)));
+        this.webClient = WebClient.builder()
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .build();
     }
 
     private String nonce() {
@@ -112,8 +124,8 @@ public class GarminService {
         return parseTokenResponse(body);
     }
 
-    public String buildAuthUrl(String requestToken) {
-        return AUTH_URL + "?oauth_token=" + requestToken;
+    public String buildAuthUrl(String requestToken, String state) {
+        return AUTH_URL + "?oauth_token=" + requestToken + "&state=" + state;
     }
 
     public GarminTokens getAccessToken(String requestToken, String requestTokenSecret, String verifier) {

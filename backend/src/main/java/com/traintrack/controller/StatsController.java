@@ -9,10 +9,13 @@ import com.traintrack.service.GarminService;
 import com.traintrack.service.StatsService;
 import com.traintrack.service.StravaService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -20,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Validated
 @RestController
 @RequestMapping("/api/stats")
 public class StatsController {
@@ -80,7 +84,7 @@ public class StatsController {
 
     @GetMapping("/weekly")
     public ResponseEntity<?> getWeekly(
-            @RequestParam(defaultValue = "12") int weeks,
+            @RequestParam(defaultValue = "12") @Min(1) @Max(104) int weeks,
             HttpSession session) {
 
         StravaTokens stravaTokens = (StravaTokens) session.getAttribute("stravaTokens");
