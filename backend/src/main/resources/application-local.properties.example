@@ -1,18 +1,8 @@
-# Copy this file to application-local.properties and fill in your real values.
-# application-local.properties is gitignored and never committed.
-#
-# To use it, run the backend with:
-#   mvn spring-boot:run -Dspring-boot.run.profiles=local
+# Local development overrides — never commit secrets here
+# Usage: mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Strava — get these from https://www.strava.com/settings/api
-strava.client-id=YOUR_STRAVA_CLIENT_ID
-strava.client-secret=YOUR_STRAVA_CLIENT_SECRET
-strava.redirect-uri=http://localhost:3001/api/auth/strava/callback
+# Cookie does not need Secure flag over plain HTTP in local dev
+server.servlet.session.cookie.secure=false
 
-# Garmin — optional, requires Health API partnership
-# garmin.consumer-key=YOUR_GARMIN_CONSUMER_KEY
-# garmin.consumer-secret=YOUR_GARMIN_CONSUMER_SECRET
-# garmin.redirect-uri=http://localhost:3001/api/auth/garmin/callback
-
-# Frontend origin (leave as-is for local dev)
-frontend.url=http://localhost:5173
+# Verbose logging in dev is fine
+logging.level.com.traintrack=DEBUG

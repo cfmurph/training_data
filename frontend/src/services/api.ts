@@ -4,6 +4,8 @@ import type { AuthStatus, NormalizedActivity, TrainingStats, WeeklyVolume } from
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
 });
 
 export async function getAuthStatus(): Promise<AuthStatus> {

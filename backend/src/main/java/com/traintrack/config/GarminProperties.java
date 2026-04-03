@@ -6,9 +6,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "garmin")
 public class GarminProperties {
+
     private String consumerKey;
     private String consumerSecret;
-    private String redirectUri;
+    private String redirectUri = "http://localhost:3001/api/auth/garmin/callback";
+
+    public boolean isConfigured() {
+        return consumerKey != null && !consumerKey.isBlank()
+            && consumerSecret != null && !consumerSecret.isBlank();
+    }
 
     public String getConsumerKey()    { return consumerKey; }
     public String getConsumerSecret() { return consumerSecret; }
