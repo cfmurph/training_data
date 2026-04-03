@@ -5,8 +5,6 @@ import com.traintrack.model.TrainingStats;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
 import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,8 +24,8 @@ public class StatsService {
                 .build();
         }
 
-        double totalDistance = activities.stream().mapToDouble(Activity::getDistanceMeters).sum();
-        long totalDuration   = activities.stream().mapToLong(Activity::getDurationSeconds).sum();
+        double totalDistance  = activities.stream().mapToDouble(Activity::getDistanceMeters).sum();
+        long totalDuration    = activities.stream().mapToLong(Activity::getDurationSeconds).sum();
         double totalElevation = activities.stream().mapToDouble(Activity::getElevationGain).sum();
 
         OptionalDouble avgHr = activities.stream()
@@ -35,24 +33,22 @@ public class StatsService {
             .mapToInt(Activity::getAverageHeartRate)
             .average();
 
-        // By-type breakdown
         Map<String, TrainingStats.TypeSummary> byType = activities.stream()
             .collect(Collectors.groupingBy(
                 a -> a.getType().name().toLowerCase(),
-                Collectors.collectingAndThen(Collectors.toList(), list -> TrainingStats.TypeSummary.builder()
-                    .count(list.size())
-                    .distanceMeters(list.stream().mapToDouble(Activity::getDistanceMeters).sum())
-                    .durationSeconds(list.stream().mapToLong(Activity::getDurationSeconds).sum())
-                    .build()
+                Collectors.collectingAndThen(Collectors.toList(), list ->
+                    TrainingStats.TypeSummary.builder()
+                        .count(list.size())
+                        .distanceMeters(list.stream().mapToDouble(Activity::getDistanceMeters).sum())
+                        .durationSeconds(list.stream().mapToLong(Activity::getDurationSeconds).sum())
+                        .build()
                 )
             ));
 
-        // Longest activity
         Activity longest = activities.stream()
             .max(Comparator.comparingDouble(Activity::getDistanceMeters))
             .orElse(null);
 
-        // Weekly volume (ISO weeks, Monday start)
         Map<LocalDate, List<Activity>> byWeek = activities.stream()
             .collect(Collectors.groupingBy(a -> mondayOf(parseDate(a.getStartDate()))));
 
