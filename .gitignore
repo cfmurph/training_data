@@ -9,3 +9,6 @@ backend/target/
 *.class
 *.jar
 *.war
+
+# Local config (contains secrets — never commit)
+backend/src/main/resources/application-local.properties

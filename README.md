@@ -90,35 +90,31 @@ Garmin's Health API requires a partnership application:
 1. Apply at [developer.garmin.com/health-api](https://developer.garmin.com/health-api/overview/)
 2. Set redirect URI to: `http://localhost:3001/api/auth/garmin/callback`
 
-### 4. Set environment variables
+### 4. Configure your credentials (local dev)
+
+Copy the example config file and fill in your Strava credentials:
 
 ```bash
-export STRAVA_CLIENT_ID=your_client_id
-export STRAVA_CLIENT_SECRET=your_client_secret
-export STRAVA_REDIRECT_URI=http://localhost:3001/api/auth/strava/callback
-
-# Optional Garmin
-export GARMIN_CONSUMER_KEY=your_key
-export GARMIN_CONSUMER_SECRET=your_secret
-export GARMIN_REDIRECT_URI=http://localhost:3001/api/auth/garmin/callback
-
-export FRONTEND_URL=http://localhost:5173
+cp backend/src/main/resources/application-local.properties.example \
+   backend/src/main/resources/application-local.properties
 ```
 
-Or edit `backend/src/main/resources/application.properties` directly.
+Then edit `application-local.properties`:
+
+```properties
+strava.client-id=12345
+strava.client-secret=abc123def456...
+```
+
+This file is gitignored and never committed. Spring Boot loads it automatically when you run with the `local` profile (see step 5).
+
+> **CI/CD / Production**: set `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` as environment variables or secrets in your platform. The `application.properties` file uses `${STRAVA_CLIENT_ID:fallback}` syntax so it picks them up automatically — no code changes needed.
 
 ### 5. Run the app
 
 ```bash
-# Both backend and frontend (requires concurrently)
-npm run dev
-```
-
-Or separately:
-
-```bash
-# Backend (terminal 1)
-cd backend && mvn spring-boot:run
+# Backend (terminal 1) — the 'local' profile loads application-local.properties
+cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 # Frontend (terminal 2)
 cd frontend && npx vite
@@ -161,8 +157,8 @@ Serve the `frontend/dist/` folder from a CDN or configure Spring Boot to serve i
 ## Development Commands
 
 ```bash
-# Backend only
-cd backend && mvn spring-boot:run
+# Backend only (with local credentials)
+cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 # Frontend only
 cd frontend && npx vite
