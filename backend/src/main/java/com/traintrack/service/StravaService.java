@@ -5,8 +5,8 @@ import com.traintrack.config.StravaProperties;
 import com.traintrack.model.Activity;
 import com.traintrack.model.AuthStatus;
 import com.traintrack.model.StravaTokens;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,33 +15,40 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.Instant;
 import java.util.*;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class StravaService {
 
-    private static final String AUTH_URL       = "https://www.strava.com/oauth/authorize";
-    private static final String TOKEN_URL      = "https://www.strava.com/api/v3/oauth/token";
-    private static final String API_BASE       = "https://www.strava.com/api/v3";
+    private static final Logger log = LoggerFactory.getLogger(StravaService.class);
+
+    private static final String AUTH_URL  = "https://www.strava.com/oauth/authorize";
+    private static final String TOKEN_URL = "https://www.strava.com/api/v3/oauth/token";
+    private static final String API_BASE  = "https://www.strava.com/api/v3";
 
     private static final Map<String, Activity.SportType> TYPE_MAP = Map.ofEntries(
-        Map.entry("Run",            Activity.SportType.RUN),
-        Map.entry("TrailRun",       Activity.SportType.RUN),
-        Map.entry("VirtualRun",     Activity.SportType.RUN),
-        Map.entry("Ride",           Activity.SportType.RIDE),
-        Map.entry("VirtualRide",    Activity.SportType.RIDE),
+        Map.entry("Run",              Activity.SportType.RUN),
+        Map.entry("TrailRun",         Activity.SportType.RUN),
+        Map.entry("VirtualRun",       Activity.SportType.RUN),
+        Map.entry("Ride",             Activity.SportType.RIDE),
+        Map.entry("VirtualRide",      Activity.SportType.RIDE),
         Map.entry("MountainBikeRide", Activity.SportType.RIDE),
-        Map.entry("GravelRide",     Activity.SportType.RIDE),
-        Map.entry("Swim",           Activity.SportType.SWIM),
-        Map.entry("Walk",           Activity.SportType.WALK),
-        Map.entry("Hike",           Activity.SportType.HIKE),
-        Map.entry("WeightTraining", Activity.SportType.STRENGTH),
-        Map.entry("Workout",        Activity.SportType.STRENGTH),
-        Map.entry("Yoga",           Activity.SportType.YOGA)
+        Map.entry("GravelRide",       Activity.SportType.RIDE),
+        Map.entry("Swim",             Activity.SportType.SWIM),
+        Map.entry("Walk",             Activity.SportType.WALK),
+        Map.entry("Hike",             Activity.SportType.HIKE),
+        Map.entry("WeightTraining",   Activity.SportType.STRENGTH),
+        Map.entry("Workout",          Activity.SportType.STRENGTH),
+        Map.entry("Yoga",             Activity.SportType.YOGA)
     );
 
     private final StravaProperties props;
-    private final WebClient webClient = WebClient.create();
+    private final WebClient webClient;
+
+    public StravaService(StravaProperties props) {
+        this.props = props;
+        this.webClient = WebClient.create();
+    }
+
+    public record TokenExchangeResult(StravaTokens tokens, AuthStatus.AthleteInfo athlete) {}
 
     public String buildAuthUrl() {
         return UriComponentsBuilder.fromHttpUrl(AUTH_URL)
@@ -53,15 +60,13 @@ public class StravaService {
             .toUriString();
     }
 
-    public record TokenExchangeResult(StravaTokens tokens, AuthStatus.AthleteInfo athlete) {}
-
     public TokenExchangeResult exchangeCode(String code) {
         JsonNode body = webClient.post()
             .uri(TOKEN_URL)
-            .body(BodyInserters.fromFormData("client_id",     props.getClientId())
-                .with("client_secret",  props.getClientSecret())
-                .with("code",           code)
-                .with("grant_type",     "authorization_code"))
+            .body(BodyInserters.fromFormData("client_id",    props.getClientId())
+                .with("client_secret", props.getClientSecret())
+                .with("code",          code)
+                .with("grant_type",    "authorization_code"))
             .retrieve()
             .bodyToMono(JsonNode.class)
             .block();
@@ -143,7 +148,7 @@ public class StravaService {
         Activity.SportType type = TYPE_MAP.getOrDefault(rawType, Activity.SportType.OTHER);
 
         double avgSpeed = node.path("average_speed").asDouble(0);
-        Double pace = (avgSpeed > 0) ? 1000.0 / avgSpeed : null;
+        Double pace = avgSpeed > 0 ? 1000.0 / avgSpeed : null;
 
         return Activity.builder()
             .id("strava-" + node.path("id").asText())

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.traintrack.config.GarminProperties;
 import com.traintrack.model.Activity;
 import com.traintrack.model.GarminTokens;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -18,10 +18,10 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class GarminService {
+
+    private static final Logger log = LoggerFactory.getLogger(GarminService.class);
 
     private static final String REQUEST_TOKEN_URL = "https://connectapi.garmin.com/oauth-service/oauth/request_token";
     private static final String AUTH_URL          = "https://connect.garmin.com/oauthConfirm";
@@ -29,21 +29,24 @@ public class GarminService {
     private static final String API_BASE          = "https://apis.garmin.com/wellness-api/rest";
 
     private static final Map<String, Activity.SportType> TYPE_MAP = Map.ofEntries(
-        Map.entry("RUNNING",          Activity.SportType.RUN),
-        Map.entry("CYCLING",          Activity.SportType.RIDE),
-        Map.entry("SWIMMING",         Activity.SportType.SWIM),
-        Map.entry("WALKING",          Activity.SportType.WALK),
-        Map.entry("HIKING",           Activity.SportType.HIKE),
+        Map.entry("RUNNING",           Activity.SportType.RUN),
+        Map.entry("CYCLING",           Activity.SportType.RIDE),
+        Map.entry("SWIMMING",          Activity.SportType.SWIM),
+        Map.entry("WALKING",           Activity.SportType.WALK),
+        Map.entry("HIKING",            Activity.SportType.HIKE),
         Map.entry("STRENGTH_TRAINING", Activity.SportType.STRENGTH),
         Map.entry("FITNESS_EQUIPMENT", Activity.SportType.STRENGTH),
-        Map.entry("YOGA",             Activity.SportType.YOGA)
+        Map.entry("YOGA",              Activity.SportType.YOGA)
     );
 
     private final GarminProperties props;
-    private final WebClient webClient = WebClient.create();
+    private final WebClient webClient;
     private final SecureRandom random = new SecureRandom();
 
-    // ── OAuth 1.0a helpers ──────────────────────────────────────────────
+    public GarminService(GarminProperties props) {
+        this.props = props;
+        this.webClient = WebClient.create();
+    }
 
     private String nonce() {
         byte[] bytes = new byte[16];
@@ -95,8 +98,6 @@ public class GarminService {
             .collect(Collectors.joining(", "));
     }
 
-    // ── OAuth flow ──────────────────────────────────────────────────────
-
     public GarminTokens getRequestToken() {
         String header = buildOAuthHeader("POST", REQUEST_TOKEN_URL, null, null,
             Map.of("oauth_callback", props.getRedirectUri()));
@@ -141,15 +142,14 @@ public class GarminService {
         );
     }
 
-    // ── Data fetching ────────────────────────────────────────────────────
-
     public List<Activity> fetchActivities(GarminTokens tokens, long startSeconds, long endSeconds) {
         String url = API_BASE + "/activities";
         Map<String, String> extra = Map.of(
             "uploadStartTimeInSeconds", String.valueOf(startSeconds),
             "uploadEndTimeInSeconds",   String.valueOf(endSeconds)
         );
-        String header = buildOAuthHeader("GET", url, tokens.getOauthToken(), tokens.getOauthTokenSecret(), extra);
+        String header = buildOAuthHeader("GET", url,
+            tokens.getOauthToken(), tokens.getOauthTokenSecret(), extra);
 
         JsonNode response = webClient.get()
             .uri(url + "?uploadStartTimeInSeconds={s}&uploadEndTimeInSeconds={e}", startSeconds, endSeconds)

@@ -1,14 +1,20 @@
 package com.traintrack.config;
 
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@Data
 @Configuration
 @ConfigurationProperties(prefix = "garmin")
 public class GarminProperties {
     private String consumerKey;
     private String consumerSecret;
     private String redirectUri;
+
+    public String getConsumerKey()    { return consumerKey; }
+    public String getConsumerSecret() { return consumerSecret; }
+    public String getRedirectUri()    { return redirectUri; }
+
+    public void setConsumerKey(String v)    { this.consumerKey = v; }
+    public void setConsumerSecret(String v) { this.consumerSecret = v; }
+    public void setRedirectUri(String v)    { this.redirectUri = v; }
 }

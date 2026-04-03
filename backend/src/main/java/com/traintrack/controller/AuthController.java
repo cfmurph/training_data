@@ -7,8 +7,8 @@ import com.traintrack.service.GarminService;
 import com.traintrack.service.StravaService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Map;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private static final String SESSION_STRAVA_TOKENS  = "stravaTokens";
     private static final String SESSION_GARMIN_TOKENS  = "garminTokens";
@@ -34,7 +34,10 @@ public class AuthController {
     private final StravaService stravaService;
     private final GarminService garminService;
 
-    // ── Status ──────────────────────────────────────────────────────────
+    public AuthController(StravaService stravaService, GarminService garminService) {
+        this.stravaService = stravaService;
+        this.garminService = garminService;
+    }
 
     @GetMapping("/status")
     public AuthStatus status(HttpSession session) {
@@ -56,8 +59,6 @@ public class AuthController {
         session.invalidate();
         return ResponseEntity.ok(Map.of("success", true));
     }
-
-    // ── Strava OAuth ────────────────────────────────────────────────────
 
     @GetMapping("/strava/connect")
     public void stravaConnect(HttpServletResponse response) throws IOException {
@@ -84,8 +85,6 @@ public class AuthController {
             response.sendRedirect(frontendUrl + "/connect?error=strava_auth_failed");
         }
     }
-
-    // ── Garmin OAuth ────────────────────────────────────────────────────
 
     @GetMapping("/garmin/connect")
     public void garminConnect(HttpSession session, HttpServletResponse response) throws IOException {
