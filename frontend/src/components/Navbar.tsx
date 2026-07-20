@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, LogOut, User, BarChart3 } from 'lucide-react';
+import { Activity, LogOut, User, BarChart3, Bike, Scale, Zap } from 'lucide-react';
 import { useAuthStatus, useLogout } from '../hooks/useTraining';
 
 const ALLOWED_AVATAR_HOSTS = [
@@ -39,14 +39,26 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-3">
-            {auth?.strava || auth?.garmin ? (
+            {auth?.strava || auth?.garmin || auth?.trainingPeaks ? (
               <>
                 <Link to="/dashboard" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800">
                   Dashboard
                 </Link>
-                <Link to="/activities" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 hidden sm:flex items-center gap-1.5">
+                <Link to="/activities" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 hidden md:flex items-center gap-1.5">
                   <Activity className="w-4 h-4" />
                   Activities
+                </Link>
+                <Link to="/plan" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 hidden md:flex items-center gap-1.5">
+                  <Bike className="w-4 h-4" />
+                  Plan
+                </Link>
+                <Link to="/performance" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 hidden md:flex items-center gap-1.5">
+                  <Zap className="w-4 h-4" />
+                  Performance
+                </Link>
+                <Link to="/weight" className="text-sm font-medium text-gray-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 hidden md:flex items-center gap-1.5">
+                  <Scale className="w-4 h-4" />
+                  Weight
                 </Link>
 
                 {auth.athlete && (
@@ -80,7 +92,7 @@ export default function Navbar() {
               </>
             ) : (
               <Link to="/connect" className="btn-primary text-sm">
-                Connect Account
+                Connect
               </Link>
             )}
           </div>

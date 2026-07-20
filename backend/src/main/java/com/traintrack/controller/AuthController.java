@@ -1,11 +1,13 @@
 package com.traintrack.controller;
 
 import com.traintrack.config.GarminProperties;
+import com.traintrack.config.TrainingPeaksProperties;
 import com.traintrack.model.AuthStatus;
 import com.traintrack.model.GarminTokens;
 import com.traintrack.model.StravaTokens;
 import com.traintrack.service.GarminService;
 import com.traintrack.service.StravaService;
+import com.traintrack.service.TrainingPeaksService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -28,6 +30,7 @@ public class AuthController {
 
     private static final String SESSION_STRAVA_TOKENS   = "stravaTokens";
     private static final String SESSION_GARMIN_TOKENS   = "garminTokens";
+    private static final String SESSION_TP_TOKENS       = "trainingPeaksTokens";
     private static final String SESSION_ATHLETE         = "athlete";
     private static final String SESSION_PROVIDER        = "provider";
     private static final String SESSION_GARMIN_REQ_TOK  = "garminRequestToken";
@@ -41,12 +44,18 @@ public class AuthController {
     private final StravaService stravaService;
     private final GarminService garminService;
     private final GarminProperties garminProperties;
+    private final TrainingPeaksService trainingPeaksService;
+    private final TrainingPeaksProperties trainingPeaksProperties;
 
     public AuthController(StravaService stravaService, GarminService garminService,
-                          GarminProperties garminProperties) {
-        this.stravaService = stravaService;
-        this.garminService = garminService;
-        this.garminProperties = garminProperties;
+                          GarminProperties garminProperties,
+                          TrainingPeaksService trainingPeaksService,
+                          TrainingPeaksProperties trainingPeaksProperties) {
+        this.stravaService             = stravaService;
+        this.garminService             = garminService;
+        this.garminProperties          = garminProperties;
+        this.trainingPeaksService      = trainingPeaksService;
+        this.trainingPeaksProperties   = trainingPeaksProperties;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -81,14 +90,17 @@ public class AuthController {
 
     @GetMapping("/status")
     public AuthStatus status(HttpSession session) {
-        boolean hasStrava = session.getAttribute(SESSION_STRAVA_TOKENS) != null;
-        boolean hasGarmin = session.getAttribute(SESSION_GARMIN_TOKENS) != null;
+        boolean hasStrava        = session.getAttribute(SESSION_STRAVA_TOKENS) != null;
+        boolean hasGarmin        = session.getAttribute(SESSION_GARMIN_TOKENS) != null;
+        boolean hasTrainingPeaks = session.getAttribute(SESSION_TP_TOKENS)     != null;
         AuthStatus.AthleteInfo athlete = (AuthStatus.AthleteInfo) session.getAttribute(SESSION_ATHLETE);
         String provider = (String) session.getAttribute(SESSION_PROVIDER);
 
         return AuthStatus.builder()
             .strava(hasStrava)
             .garmin(hasGarmin)
+            .trainingPeaks(hasTrainingPeaks)
+            .trainingPeaksConfigured(trainingPeaksProperties.isConfigured())
             .athlete(athlete)
             .provider(provider)
             .build();
@@ -201,6 +213,56 @@ public class AuthController {
         } catch (Exception ex) {
             log.error("Garmin callback error", ex);
             response.sendRedirect(frontendUrl + "/connect?error=garmin_auth_failed");
+        }
+    }
+
+    // ── Training Peaks OAuth 2.0 ──────────────────────────────────────
+
+    @GetMapping("/trainingpeaks/connect")
+    public void trainingPeaksConnect(HttpServletRequest request,
+                                      HttpServletResponse response) throws IOException {
+        if (!trainingPeaksProperties.isConfigured()) {
+            response.sendRedirect(frontendUrl + "/connect?error=trainingpeaks_not_configured");
+            return;
+        }
+        String state = generateState();
+        request.getSession(true).setAttribute(SESSION_OAUTH_STATE, state);
+        response.sendRedirect(trainingPeaksService.buildAuthUrl(state));
+    }
+
+    @GetMapping("/trainingpeaks/callback")
+    public void trainingPeaksCallback(@RequestParam(required = false) String code,
+                                       @RequestParam(required = false) String error,
+                                       @RequestParam(required = false) String state,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession(false);
+        String expectedState = session != null ? (String) session.getAttribute(SESSION_OAUTH_STATE) : null;
+
+        if (error != null || code == null) {
+            response.sendRedirect(frontendUrl + "/connect?error=trainingpeaks_denied");
+            return;
+        }
+        if (state == null || !state.equals(expectedState)) {
+            log.warn("Training Peaks OAuth state mismatch");
+            response.sendRedirect(frontendUrl + "/connect?error=trainingpeaks_auth_failed");
+            return;
+        }
+        try {
+            TrainingPeaksService.TokenResult result = trainingPeaksService.exchangeCode(code);
+            HttpSession fresh = rotateSession(request);
+            fresh.removeAttribute(SESSION_OAUTH_STATE);
+            fresh.setAttribute(SESSION_TP_TOKENS, Map.of(
+                "accessToken",  result.accessToken(),
+                "refreshToken", result.refreshToken(),
+                "expiresAt",    result.expiresAt()
+            ));
+            fresh.setAttribute(SESSION_ATHLETE, result.athlete());
+            fresh.setAttribute(SESSION_PROVIDER, "trainingpeaks");
+            response.sendRedirect(frontendUrl + "/dashboard?connected=trainingpeaks");
+        } catch (Exception ex) {
+            log.error("Training Peaks callback error", ex);
+            response.sendRedirect(frontendUrl + "/connect?error=trainingpeaks_auth_failed");
         }
     }
 }

@@ -5,6 +5,9 @@ import LandingPage from './pages/LandingPage';
 import ConnectPage from './pages/ConnectPage';
 import DashboardPage from './pages/DashboardPage';
 import ActivitiesPage from './pages/ActivitiesPage';
+import TrainingPlanPage from './pages/TrainingPlanPage';
+import WeightTrackerPage from './pages/WeightTrackerPage';
+import PerformancePage from './pages/PerformancePage';
 import { useAuthStatus } from './hooks/useTraining';
 
 const queryClient = new QueryClient({
@@ -20,7 +23,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { data: auth, isLoading } = useAuthStatus();
 
   if (isLoading) return null;
-  if (!auth?.strava && !auth?.garmin) {
+  if (!auth?.strava && !auth?.garmin && !auth?.trainingPeaks) {
     return <Navigate to="/connect" replace />;
   }
   return <>{children}</>;
@@ -47,6 +50,30 @@ function AppRoutes() {
             element={
               <AuthGuard>
                 <ActivitiesPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/plan"
+            element={
+              <AuthGuard>
+                <TrainingPlanPage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/performance"
+            element={
+              <AuthGuard>
+                <PerformancePage />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/weight"
+            element={
+              <AuthGuard>
+                <WeightTrackerPage />
               </AuthGuard>
             }
           />
