@@ -50,6 +50,7 @@ public class ActivityController {
         try {
             List<Activity> activities;
             if (stravaTokens != null) {
+                stravaTokens = refreshAndPersist(stravaTokens, session);
                 activities = stravaService.fetchActivities(stravaTokens, page, perPage);
             } else {
                 long now = Instant.now().getEpochSecond();
@@ -78,6 +79,7 @@ public class ActivityController {
         try {
             List<Activity> activities;
             if (stravaTokens != null) {
+                stravaTokens = refreshAndPersist(stravaTokens, session);
                 activities = stravaService.fetchActivities(stravaTokens, 1, limit);
             } else {
                 long now = Instant.now().getEpochSecond();
@@ -90,5 +92,18 @@ public class ActivityController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch recent activities"));
         }
+    }
+
+    /**
+     * Refreshes the Strava access token if it's near expiry and persists the
+     * refreshed tokens back to the session, so subsequent requests don't keep
+     * refreshing a stale token (or fail once a rotated refresh token is lost).
+     */
+    private StravaTokens refreshAndPersist(StravaTokens tokens, HttpSession session) {
+        StravaTokens fresh = stravaService.refreshIfNeeded(tokens);
+        if (fresh != tokens) {
+            session.setAttribute("stravaTokens", fresh);
+        }
+        return fresh;
     }
 }
