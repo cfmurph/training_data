@@ -43,7 +43,7 @@ public class PerformanceAssessmentService {
                                                   List<Activity> activities,
                                                   LocalDate from, LocalDate to) {
         List<PlannedWorkout> workouts = workoutRepo
-            .findByPlanIdAndWorkoutDateBetweenOrderByWorkoutDate(plan.getId(), from, to);
+            .findByPlan_IdAndWorkoutDateBetweenOrderByWorkoutDate(plan.getId(), from, to);
 
         // Index activities by date
         Map<LocalDate, List<Activity>> actsByDate = activities.stream()
@@ -72,7 +72,7 @@ public class PerformanceAssessmentService {
         }
 
         List<PlannedWorkout> workouts = workoutRepo
-            .findByPlanIdAndWorkoutDateBetweenOrderByWorkoutDate(plan.getId(), start, cutoff);
+            .findByPlan_IdAndWorkoutDateBetweenOrderByWorkoutDate(plan.getId(), start, cutoff);
 
         Map<LocalDate, List<Activity>> actsByDate = activities.stream()
             .collect(Collectors.groupingBy(a -> parseDate(a.getStartDate())));
