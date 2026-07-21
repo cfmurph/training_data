@@ -8,9 +8,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -92,9 +94,25 @@ public class SecurityConfig {
 
             // Disable form login and HTTP Basic — not used in this API
             .formLogin(f -> f.disable())
-            .httpBasic(b -> b.disable());
+            .httpBasic(b -> b.disable())
+
+            // Bridge our manual session-based OAuth login (Strava/Garmin
+            // tokens stored on HttpSession) into the SecurityContext so
+            // .authenticated() above reflects real login state instead of
+            // always seeing an AnonymousAuthenticationToken.
+            .addFilterBefore(new SessionAuthenticationFilter(), AnonymousAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Publishes HttpSessionDestroyedEvent to the SessionRegistry, so entries
+     * are removed on logout/expiry and .maximumSessions(5) above is enforced
+     * against sessions that are actually still alive.
+     */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 
     @Bean
