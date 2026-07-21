@@ -47,14 +47,18 @@ public class AuthStatus {
 
     private final boolean strava;
     private final boolean garmin;
+    private final boolean trainingPeaks;
+    private final boolean trainingPeaksConfigured;
     private final AthleteInfo athlete;
     private final String provider;
 
     private AuthStatus(Builder b) {
-        this.strava = b.strava;
-        this.garmin = b.garmin;
-        this.athlete = b.athlete;
-        this.provider = b.provider;
+        this.strava                   = b.strava;
+        this.garmin                   = b.garmin;
+        this.trainingPeaks            = b.trainingPeaks;
+        this.trainingPeaksConfigured  = b.trainingPeaksConfigured;
+        this.athlete                  = b.athlete;
+        this.provider                 = b.provider;
     }
 
     public static Builder builder() { return new Builder(); }
@@ -62,18 +66,24 @@ public class AuthStatus {
     public static class Builder {
         private boolean strava;
         private boolean garmin;
+        private boolean trainingPeaks;
+        private boolean trainingPeaksConfigured;
         private AthleteInfo athlete;
         private String provider;
 
-        public Builder strava(boolean v)        { this.strava = v; return this; }
-        public Builder garmin(boolean v)        { this.garmin = v; return this; }
-        public Builder athlete(AthleteInfo v)   { this.athlete = v; return this; }
-        public Builder provider(String v)       { this.provider = v; return this; }
-        public AuthStatus build()               { return new AuthStatus(this); }
+        public Builder strava(boolean v)                    { this.strava = v; return this; }
+        public Builder garmin(boolean v)                    { this.garmin = v; return this; }
+        public Builder trainingPeaks(boolean v)             { this.trainingPeaks = v; return this; }
+        public Builder trainingPeaksConfigured(boolean v)   { this.trainingPeaksConfigured = v; return this; }
+        public Builder athlete(AthleteInfo v)               { this.athlete = v; return this; }
+        public Builder provider(String v)                   { this.provider = v; return this; }
+        public AuthStatus build()                           { return new AuthStatus(this); }
     }
 
-    public boolean isStrava()       { return strava; }
-    public boolean isGarmin()       { return garmin; }
-    public AthleteInfo getAthlete() { return athlete; }
-    public String getProvider()     { return provider; }
+    public boolean isStrava()                   { return strava; }
+    public boolean isGarmin()                   { return garmin; }
+    public boolean isTrainingPeaks()            { return trainingPeaks; }
+    public boolean isTrainingPeaksConfigured()  { return trainingPeaksConfigured; }
+    public AthleteInfo getAthlete()             { return athlete; }
+    public String getProvider()                 { return provider; }
 }

@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -46,7 +45,8 @@ public class SecurityConfig {
                 // OAuth callbacks are browser GET redirects — exclude from CSRF
                 .ignoringRequestMatchers(
                     "/api/auth/strava/callback",
-                    "/api/auth/garmin/callback"
+                    "/api/auth/garmin/callback",
+                    "/api/auth/trainingpeaks/callback"
                 )
             )
 
@@ -74,12 +74,10 @@ public class SecurityConfig {
             )
 
             // ── Authorization ─────────────────────────────────────────
-            // All /api/auth/* endpoints are public (OAuth flows + status check).
-            // All other /api/** endpoints require an authenticated session.
+            // All /api/** endpoints are permitted at the Spring Security level.
+            // Session-based auth is enforced in individual controllers by checking
+            // for stravaTokens / garminTokens / trainingPeaksTokens session attributes.
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/health").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
 
@@ -120,7 +118,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(List.of(frontendUrl));
-        config.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
             "Content-Type",
             "X-XSRF-TOKEN",

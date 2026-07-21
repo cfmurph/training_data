@@ -51,6 +51,8 @@ export interface TrainingStats {
 export interface AuthStatus {
   strava: boolean;
   garmin: boolean;
+  trainingPeaks: boolean;
+  trainingPeaksConfigured: boolean;
   athlete: {
     id: number | string;
     name: string;
@@ -59,5 +61,103 @@ export interface AuthStatus {
     city?: string;
     country?: string;
   } | null;
-  provider: 'strava' | 'garmin' | null;
+  provider: 'strava' | 'garmin' | 'trainingpeaks' | null;
+}
+
+// ── Training Plan types ─────────────────────────────────────────────
+
+export type FitnessLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type PlanPhase = 'BASE' | 'BUILD' | 'PEAK' | 'TAPER';
+export type WorkoutType =
+  | 'REST'
+  | 'RECOVERY'
+  | 'ENDURANCE'
+  | 'TEMPO'
+  | 'THRESHOLD'
+  | 'INTERVALS'
+  | 'LONG_RIDE';
+
+export interface PlannedWorkout {
+  id: number;
+  planId: number;
+  workoutDate: string;
+  workoutType: WorkoutType;
+  targetDurationMinutes: number;
+  targetDistanceKm: number;
+  intensityZone: number;
+  description: string;
+  warmup?: string;
+  mainSet?: string;
+  cooldown?: string;
+  completed: boolean;
+  linkedActivityId?: string;
+  planWeek: number;
+  planDay: number;
+}
+
+export interface TrainingPlan {
+  id: number;
+  athleteId: string;
+  athleteName: string;
+  startDate: string;
+  endDate: string;
+  goalEvent?: string;
+  weeklyHoursTarget: number;
+  fitnessLevel: FitnessLevel;
+  currentPhase: PlanPhase;
+  active: boolean;
+  createdAt: string;
+  weightGoalKg: number;
+}
+
+export interface CreatePlanRequest {
+  fitnessLevel: FitnessLevel;
+  weeklyHours: number;
+  startDate?: string;
+  goalEvent?: string;
+  goalWeightKg?: number;
+}
+
+// ── Performance assessment types ────────────────────────────────────
+
+export type AssessmentStatus = 'COMPLETED' | 'PARTIAL' | 'MISSED' | 'LOW';
+
+export interface DailyAssessment {
+  date: string;
+  planned: PlannedWorkout;
+  actual: NormalizedActivity | null;
+  complianceScore: number;
+  feedback: string;
+  status: AssessmentStatus;
+}
+
+export interface PlanCompliance {
+  totalWorkouts: number;
+  completedWorkouts: number;
+  complianceRate: number;
+  assessments: DailyAssessment[];
+}
+
+// ── Weight tracking types ───────────────────────────────────────────
+
+export interface WeightEntry {
+  id: number;
+  athleteId: string;
+  entryDate: string;
+  weightKg: number;
+  goalWeightKg: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface WeightSummary {
+  currentWeightKg: number;
+  startingWeightKg: number;
+  totalLossKg: number;
+  goalWeightKg: number;
+  sevenDayAvgKg: number;
+  weeklyRateKg: number;
+  estimatedDaysToGoal?: number;
+  totalEntries: number;
+  history: WeightEntry[];
 }

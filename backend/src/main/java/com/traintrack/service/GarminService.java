@@ -154,6 +154,13 @@ public class GarminService {
         );
     }
 
+    /** Fetch activities for the last 30 days. */
+    public List<Activity> fetchActivities(GarminTokens tokens) {
+        long now   = Instant.now().getEpochSecond();
+        long month = now - 30L * 24 * 3600;
+        return fetchActivities(tokens, month, now);
+    }
+
     public List<Activity> fetchActivities(GarminTokens tokens, long startSeconds, long endSeconds) {
         String url = API_BASE + "/activities";
         Map<String, String> extra = Map.of(
