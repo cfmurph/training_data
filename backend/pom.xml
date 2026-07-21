@@ -19,6 +19,12 @@
 
   <properties>
     <java.version>21</java.version>
+    <!-- Spring Boot 3.2.4 pins Mockito 5.7.0 and Byte Buddy 1.14.x, which only
+         understand classfiles up to Java 22. Override both so `mvn test`
+         doesn't fail with "cannot mock this class" on newer local JDKs
+         (e.g. Java 25 via Homebrew) — Byte Buddy 1.17.6+ supports Java 25. -->
+    <mockito.version>5.23.0</mockito.version>
+    <byte-buddy.version>1.17.7</byte-buddy.version>
   </properties>
 
   <dependencies>

@@ -86,15 +86,15 @@ public class CyclingPlanService {
     }
 
     public List<PlannedWorkout> getWorkoutsForWeek(Long planId, int week) {
-        return workoutRepo.findByPlanIdAndPlanWeek(planId, week);
+        return workoutRepo.findByPlan_IdAndPlanWeek(planId, week);
     }
 
     public List<PlannedWorkout> getWorkoutsInRange(Long planId, LocalDate from, LocalDate to) {
-        return workoutRepo.findByPlanIdAndWorkoutDateBetweenOrderByWorkoutDate(planId, from, to);
+        return workoutRepo.findByPlan_IdAndWorkoutDateBetweenOrderByWorkoutDate(planId, from, to);
     }
 
     public Optional<PlannedWorkout> getWorkoutForDate(Long planId, LocalDate date) {
-        return workoutRepo.findByPlanIdAndWorkoutDate(planId, date);
+        return workoutRepo.findByPlan_IdAndWorkoutDate(planId, date);
     }
 
     public PlannedWorkout markCompleted(Long workoutId, String linkedActivityId) {
