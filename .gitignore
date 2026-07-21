@@ -11,5 +11,8 @@ backend/target/
 *.jar
 *.war
 
+# H2 file-based database (local runtime data, not source)
+backend/data/
+
 # Local config (contains secrets — never commit)
 backend/src/main/resources/application-local.properties
